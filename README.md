@@ -4,16 +4,19 @@ Kindgerechte Progressive Web App (PWA): Ein Tier läuft sichtbar zum Futter – 
 
 **Deutsch · mobil zuerst (iPhone Safari) · ohne Backend · ohne Tracking**
 
+Live: https://jeromesnca.github.io/tier-timer/
+
 ## Funktionen
 
 - **Einrichtung (Eltern):** Hintergrund, Tier + Futter, Dauer (1 Minute bis 4 Stunden)
-- **Laufender Timer:** große Countdown-Anzeige, Tier bewegt sich entlang eines Pfads zum Futter
+- **Dauer-UX:** großer Schieberegler (1–240 Min, kontinuierlich), plus Std/Min-Tasten und Schnellwahl
+- **Laufender Timer:** große Countdown-Anzeige, Tier bewegt sich entlang eines dicken, gut sichtbaren Pfads zum Futter (Fortschrittsbalken, Leuchtpunkt, Markierungspunkte, Prozent)
 - **Antippen des Tiers:** Tierlaut + Restzeit per Sprache (`speechSynthesis`, `de-DE`) und großer Einblendung
 - **Ende:** Tier erreicht das Futter, Mampf- und Feier-Sounds, Neustart / Zurück
 - **PWA:** zum Home-Bildschirm hinzufügbar, offlinefähig per Service Worker
 
 ### Hintergründe
-Wald, Wiese, Stall/Bauernhof, Garten, Aquarium, Wohnzimmer
+Wald, Wiese, Stall, Garten, Aquarium, Wohnzimmer (SVG/CSS-Szenen)
 
 ### Tiere & Futter
 | Tier | Futter |
@@ -50,6 +53,10 @@ npm run preview
 
 Der fertige statische Build liegt in `dist/` und kann auf jedem Static-Host ausgeliefert werden (Netlify, Cloudflare Pages, GitHub Pages, Nginx, …).
 
+## GitHub Pages
+
+Dieses Repo ist für GitHub Pages unter `./` Base-Pfad gebaut (`vite.config.js` → `base: './'`). Nach Push auf `master`/`main` den Pages-Build aus dem `dist/`-Ordner bzw. der gewählten Branch/Action-Pipeline neu auslösen.
+
 ## Auf dem iPhone zum Home-Bildschirm
 
 1. App im **Safari**-Browser öffnen (nicht Chrome/Firefox – „Zum Home-Bildschirm“ funktioniert zuverlässig in Safari).
@@ -63,18 +70,17 @@ Die App öffnet sich danach im Vollbild (Standalone).
 
 Es gibt **keine Audio-Dateien** im Repo. Alle Geräusche werden **prozedural** mit der **Web Audio API** erzeugt (`src/sounds.js`):
 
-- Tierlaute (Kuh, Pferd, Huhn, Schwein, Hund, Katze, Fisch/Blasen)
+- Tierlaute (Kuh, Pferd, Huhn, Schwein, Hund, Katze, Fisch/Blasen) mit Formanten/Vibrato
 - Mampf-Geräusche und kurze Feiermelodie am Ende
 
 **iOS / Safari:** Audio darf erst nach einer Benutzeraktion starten. Beim Tippen auf **Start** wird `AudioContext` freigeschaltet (`unlockAudio()`). Ohne diesen Unlock bleiben Sounds stumm.
 
 **Sprache:** Restzeit und Abschluss nutzen `window.speechSynthesis` mit `lang: 'de-DE'`. Verfügbarkeit und Stimme hängen vom Gerät/OS ab; bei manchen iOS-Einstellungen kann Sprache leise sein oder eine Bestätigung brauchen.
 
-## Einschränkungen (MVP)
+## Einschränkungen
 
 - Prozedurale Sounds klingen spielerisch, nicht wie echte Aufnahmen.
 - `speechSynthesis` und Audio können auf iOS im Hintergrund oder bei Stumm-Schalter eingeschränkt sein.
-- Dauer-Einstellung über Stunden-/Minuten-Tasten + Schnellwahl (kein physisches Drehrad).
 - Portrait-first; Querformat funktioniert, ist aber nicht der Fokus.
 - Kein Server, keine Accounts, keine Speicherung der letzten Auswahl (Session nur im Speicher).
 
@@ -91,6 +97,7 @@ tier-timer/
 │   ├── main.js
 │   ├── app.js              # UI & Timer-Logik
 │   ├── data.js             # Tiere, Hintergründe, Zeitformat
+│   ├── visuals.js          # SVG-Szenen & Pfad-Markierungen
 │   ├── sounds.js           # Web Audio (prozedural)
 │   ├── speech.js           # speechSynthesis de-DE
 │   └── style.css

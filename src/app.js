@@ -3,18 +3,22 @@ import {
   BACKGROUNDS,
   MIN_DURATION_SEC,
   MAX_DURATION_SEC,
+  MIN_DURATION_MIN,
+  MAX_DURATION_MIN,
   formatTime,
   formatSpokenTime,
+  formatDurationLabel,
 } from './data.js'
-import { unlockAudio, playAnimalSound, playMunch, playCelebration } from './sounds.js'
+import { unlockAudio, playAnimalSound, playMunch, playCelebration, playTickSoft } from './sounds.js'
 import { speakGerman, stopSpeech } from './speech.js'
+import { sceneDecorSVG, animalBadgeHTML, pathMarkersHTML } from './visuals.js'
 
 const state = {
   screen: 'setup', // setup | running | end
   backgroundId: 'wiese',
   animalId: 'kuh',
-  hours: 0,
-  minutes: 5,
+  /** Total duration in whole minutes (1–240) — single source of truth for setup */
+  durationMin: 5,
   totalMs: 0,
   remainingMs: 0,
   startedAt: 0,
@@ -27,19 +31,14 @@ const state = {
   celebrationDone: false,
 }
 
-function clampDuration() {
-  let total = state.hours * 3600 + state.minutes * 60
-  if (total < MIN_DURATION_SEC) {
-    state.hours = 0
-    state.minutes = 1
-    total = MIN_DURATION_SEC
-  }
-  if (total > MAX_DURATION_SEC) {
-    state.hours = 4
-    state.minutes = 0
-    total = MAX_DURATION_SEC
-  }
-  return total
+function clampDurationMin(min) {
+  const n = Math.round(Number(min) || MIN_DURATION_MIN)
+  return Math.min(MAX_DURATION_MIN, Math.max(MIN_DURATION_MIN, n))
+}
+
+function durationSec() {
+  state.durationMin = clampDurationMin(state.durationMin)
+  return state.durationMin * 60
 }
 
 function getAnimal() {
@@ -51,59 +50,51 @@ function getBackground() {
 }
 
 function decorHTML(decor) {
-  switch (decor) {
-    case 'trees':
-      return `
-        <div class="decor trees">
-          <span class="tree t1">🌲</span><span class="tree t2">🌳</span>
-          <span class="tree t3">🌲</span><span class="cloud c1">☁️</span>
-          <span class="cloud c2">☁️</span><span class="sun">☀️</span>
-        </div>`
-    case 'flowers':
-      return `
-        <div class="decor flowers">
-          <span class="sun">☀️</span><span class="cloud c1">☁️</span>
-          <span class="flower f1">🌼</span><span class="flower f2">🌷</span>
-          <span class="flower f3">🌸</span><span class="flower f4">🌼</span>
-          <span class="butterfly">🦋</span>
-        </div>`
-    case 'barn':
-      return `
-        <div class="decor barn">
-          <span class="sun">☀️</span>
-          <div class="barn-shape" aria-hidden="true"></div>
-          <span class="hay">🌾</span><span class="fence">🪵</span>
-        </div>`
-    case 'garden':
-      return `
-        <div class="decor garden">
-          <span class="sun">☀️</span><span class="cloud c1">☁️</span>
-          <span class="plant p1">🌻</span><span class="plant p2">🥕</span>
-          <span class="plant p3">🥬</span><span class="bee">🐝</span>
-        </div>`
-    case 'water':
-      return `
-        <div class="decor water">
-          <span class="bubble b1">🫧</span><span class="bubble b2">🫧</span>
-          <span class="bubble b3">🫧</span><span class="seaweed s1">🌿</span>
-          <span class="seaweed s2">🌿</span><span class="coral">🪸</span>
-        </div>`
-    case 'home':
-      return `
-        <div class="decor home">
-          <div class="window" aria-hidden="true"></div>
-          <span class="lamp">🛋️</span><span class="plant-home">🪴</span>
-          <span class="picture">🖼️</span>
-        </div>`
-    default:
-      return ''
+  return `<div class="decor decor-${decor}">${sceneDecorSVG(decor)}</div>`
+}
+
+function hoursMinutesParts(mins) {
+  const m = clampDurationMin(mins)
+  return { hours: Math.floor(m / 60), minutes: m % 60 }
+}
+
+function setDurationFromHM(hours, minutes) {
+  state.durationMin = clampDurationMin(hours * 60 + minutes)
+}
+
+function updateDurationUI(root) {
+  const totalSec = durationSec()
+  const { hours, minutes } = hoursMinutesParts(state.durationMin)
+  const slider = root.querySelector('#duration-slider')
+  const big = root.querySelector('#duration-big')
+  const hint = root.querySelector('.duration-hint strong')
+  const hv = root.querySelector('#hours-val')
+  const mv = root.querySelector('#minutes-val')
+  const fill = root.querySelector('.slider-fill')
+  if (slider && Number(slider.value) !== state.durationMin) {
+    slider.value = String(state.durationMin)
   }
+  if (big) big.textContent = formatTime(totalSec)
+  if (hint) hint.textContent = formatDurationLabel(totalSec)
+  if (hv) hv.textContent = String(hours)
+  if (mv) mv.textContent = String(minutes).padStart(2, '0')
+  if (fill) {
+    const pct =
+      ((state.durationMin - MIN_DURATION_MIN) / (MAX_DURATION_MIN - MIN_DURATION_MIN)) * 100
+    fill.style.width = `${pct}%`
+  }
+  root.querySelectorAll('[data-quick]').forEach((el) => {
+    el.classList.toggle('selected', Number(el.dataset.quick) === state.durationMin)
+  })
 }
 
 function renderSetup(root) {
   const animal = getAnimal()
   const bg = getBackground()
-  const totalSec = clampDuration()
+  const totalSec = durationSec()
+  const { hours, minutes } = hoursMinutesParts(state.durationMin)
+  const sliderPct =
+    ((state.durationMin - MIN_DURATION_MIN) / (MAX_DURATION_MIN - MIN_DURATION_MIN)) * 100
 
   root.innerHTML = `
     <div class="screen setup safe">
@@ -141,37 +132,71 @@ function renderSetup(root) {
         </div>
       </section>
 
-      <section class="card">
+      <section class="card duration-card">
         <h2>3. Dauer</h2>
-        <div class="duration-picker" aria-label="Dauer wählen">
+        <div class="duration-big-wrap">
+          <div class="duration-big" id="duration-big">${formatTime(totalSec)}</div>
+          <p class="duration-hint">Gewählt: <strong>${formatDurationLabel(totalSec)}</strong></p>
+        </div>
+
+        <div class="slider-block" aria-label="Dauer kontinuierlich einstellen">
+          <div class="slider-track-bg">
+            <div class="slider-fill" style="width:${sliderPct}%"></div>
+            <input
+              type="range"
+              id="duration-slider"
+              class="duration-slider"
+              min="${MIN_DURATION_MIN}"
+              max="${MAX_DURATION_MIN}"
+              step="1"
+              value="${state.durationMin}"
+              aria-valuemin="${MIN_DURATION_MIN}"
+              aria-valuemax="${MAX_DURATION_MIN}"
+              aria-valuenow="${state.durationMin}"
+              aria-label="Dauer in Minuten, 1 bis 240"
+            />
+          </div>
+          <div class="slider-labels">
+            <span>1 Min</span>
+            <span>1 Std</span>
+            <span>2 Std</span>
+            <span>4 Std</span>
+          </div>
+        </div>
+
+        <div class="duration-picker" aria-label="Stunden und Minuten">
           <div class="dial">
             <button type="button" class="dial-btn" data-dial="hours" data-dir="up" aria-label="Stunde plus">▲</button>
-            <div class="dial-value" id="hours-val">${state.hours}</div>
+            <div class="dial-value" id="hours-val">${hours}</div>
             <div class="dial-unit">Std</div>
             <button type="button" class="dial-btn" data-dial="hours" data-dir="down" aria-label="Stunde minus">▼</button>
           </div>
           <div class="dial-colon">:</div>
           <div class="dial">
             <button type="button" class="dial-btn" data-dial="minutes" data-dir="up" aria-label="Minute plus">▲</button>
-            <div class="dial-value" id="minutes-val">${String(state.minutes).padStart(2, '0')}</div>
+            <div class="dial-value" id="minutes-val">${String(minutes).padStart(2, '0')}</div>
             <div class="dial-unit">Min</div>
             <button type="button" class="dial-btn" data-dial="minutes" data-dir="down" aria-label="Minute minus">▼</button>
           </div>
         </div>
+
         <div class="quick-row">
-          <button type="button" class="quick" data-quick="1">1 Min</button>
-          <button type="button" class="quick" data-quick="5">5 Min</button>
-          <button type="button" class="quick" data-quick="10">10 Min</button>
-          <button type="button" class="quick" data-quick="15">15 Min</button>
-          <button type="button" class="quick" data-quick="30">30 Min</button>
-          <button type="button" class="quick" data-quick="60">1 Std</button>
+          <button type="button" class="quick ${state.durationMin === 1 ? 'selected' : ''}" data-quick="1">1 Min</button>
+          <button type="button" class="quick ${state.durationMin === 5 ? 'selected' : ''}" data-quick="5">5 Min</button>
+          <button type="button" class="quick ${state.durationMin === 10 ? 'selected' : ''}" data-quick="10">10 Min</button>
+          <button type="button" class="quick ${state.durationMin === 15 ? 'selected' : ''}" data-quick="15">15 Min</button>
+          <button type="button" class="quick ${state.durationMin === 30 ? 'selected' : ''}" data-quick="30">30 Min</button>
+          <button type="button" class="quick ${state.durationMin === 60 ? 'selected' : ''}" data-quick="60">1 Std</button>
+          <button type="button" class="quick ${state.durationMin === 120 ? 'selected' : ''}" data-quick="120">2 Std</button>
         </div>
-        <p class="duration-hint">Gewählt: <strong>${formatSpokenTime(totalSec).replace(/^Noch |\.$/g, '')}</strong> (1 Min – 4 Std)</p>
+        <p class="duration-range-note">1 Minute – 4 Stunden · Schieberegler für feine Einstellung</p>
       </section>
 
       <div class="preview-mini" style="background:${bg.gradient}">
-        <span class="preview-animal">${animal.emoji}</span>
-        <span class="preview-path">———→</span>
+        <span class="preview-animal">${animalBadgeHTML(animal.emoji, animal.color)}</span>
+        <span class="preview-path" aria-hidden="true">
+          <span class="preview-road"></span>
+        </span>
         <span class="preview-food">${animal.foodEmoji}</span>
       </div>
 
@@ -191,37 +216,52 @@ function renderSetup(root) {
       render(root)
     })
   })
+
+  const slider = root.querySelector('#duration-slider')
+  if (slider) {
+    let lastTickMin = state.durationMin
+    const onSlide = () => {
+      state.durationMin = clampDurationMin(slider.value)
+      slider.setAttribute('aria-valuenow', String(state.durationMin))
+      updateDurationUI(root)
+      // Soft tick only when the minute value jumps by ≥2 (less noisy while dragging)
+      if (Math.abs(state.durationMin - lastTickMin) >= 2) {
+        playTickSoft()
+        lastTickMin = state.durationMin
+      }
+    }
+    slider.addEventListener('input', onSlide)
+    slider.addEventListener('change', () => {
+      onSlide()
+      lastTickMin = state.durationMin
+    })
+  }
+
   function nudgeDial(dial, dir) {
+    const { hours: h, minutes: m } = hoursMinutesParts(state.durationMin)
     if (dial === 'hours') {
-      state.hours = Math.min(4, Math.max(0, state.hours + dir))
-      if (state.hours === 4) state.minutes = 0
+      setDurationFromHM(Math.min(4, Math.max(0, h + dir)), h + dir >= 4 ? 0 : m)
     } else {
-      let m = state.minutes + dir
-      if (m > 59) {
-        if (state.hours < 4) {
-          state.hours += 1
-          m = 0
-        } else m = 59
+      let nm = m + dir
+      let nh = h
+      if (nm > 59) {
+        if (nh < 4) {
+          nh += 1
+          nm = 0
+        } else nm = 0
       }
-      if (m < 0) {
-        if (state.hours > 0) {
-          state.hours -= 1
-          m = 59
-        } else m = 0
+      if (nm < 0) {
+        if (nh > 0) {
+          nh -= 1
+          nm = 59
+        } else nm = 1 // floor at 1 min overall via clamp
       }
-      if (state.hours === 4) m = 0
-      state.minutes = m
+      if (nh === 4) nm = 0
+      setDurationFromHM(nh, nm)
     }
-    clampDuration()
-    const hv = root.querySelector('#hours-val')
-    const mv = root.querySelector('#minutes-val')
-    const hint = root.querySelector('.duration-hint strong')
-    if (hv) hv.textContent = String(state.hours)
-    if (mv) mv.textContent = String(state.minutes).padStart(2, '0')
-    if (hint) {
-      hint.textContent = formatSpokenTime(clampDuration())
-        .replace(/^Noch |\.$/g, '')
-    }
+    // Ensure at least 1 minute
+    if (state.durationMin < 1) state.durationMin = 1
+    updateDurationUI(root)
   }
 
   root.querySelectorAll('.dial-btn').forEach((el) => {
@@ -240,28 +280,27 @@ function renderSetup(root) {
       nudgeDial(dial, dir)
       stop()
       delay = setTimeout(() => {
-        timer = setInterval(() => nudgeDial(dial, dir), 80)
-      }, 380)
+        timer = setInterval(() => nudgeDial(dial, dir), 70)
+      }, 350)
     }
     el.addEventListener('pointerdown', start)
     el.addEventListener('pointerup', stop)
     el.addEventListener('pointerleave', stop)
     el.addEventListener('pointercancel', stop)
   })
+
   root.querySelectorAll('[data-quick]').forEach((el) => {
     el.addEventListener('click', () => {
-      const mins = Number(el.dataset.quick)
-      state.hours = Math.floor(mins / 60)
-      state.minutes = mins % 60
-      clampDuration()
-      render(root)
+      state.durationMin = clampDurationMin(el.dataset.quick)
+      updateDurationUI(root)
     })
   })
+
   root.querySelector('#btn-start').addEventListener('click', async () => {
     await unlockAudio()
-    const animal = getAnimal()
-    playAnimalSound(animal.sound)
-    const sec = clampDuration()
+    const a = getAnimal()
+    playAnimalSound(a.sound)
+    const sec = Math.min(MAX_DURATION_SEC, Math.max(MIN_DURATION_SEC, durationSec()))
     state.totalMs = sec * 1000
     state.remainingMs = state.totalMs
     state.startedAt = performance.now()
@@ -295,18 +334,29 @@ function renderRunning(root) {
 
       <div class="scene" id="scene">
         <div class="path-track" aria-hidden="true">
-          <div class="path-line"></div>
-          <div class="path-fill" style="width:${progress * 100}%"></div>
+          <div class="path-rail"></div>
+          <div class="path-fill" style="width:${progress * 100}%">
+            <span class="path-glow"></span>
+          </div>
+          <div class="path-dashes"></div>
+          <div class="path-markers">${pathMarkersHTML(progress)}</div>
         </div>
+        <div class="path-start-flag" aria-hidden="true">🏁</div>
         <button type="button" class="animal-btn" id="animal-btn"
           style="left:${leftPct}%"
           aria-label="${animal.name} antippen für Geräusch und Restzeit">
-          <span class="animal-sprite ${state.paused ? '' : 'walking'}">${animal.emoji}</span>
+          ${animalBadgeHTML(animal.emoji, animal.color, state.paused ? '' : 'walking')}
         </button>
         <div class="food-spot" aria-hidden="true">
+          <span class="food-pulse"></span>
           <span class="food-emoji">${animal.foodEmoji}</span>
           <span class="food-label">${animal.food}</span>
         </div>
+      </div>
+
+      <div class="progress-caption" aria-hidden="true">
+        <span class="progress-pct" id="progress-pct">${Math.round(progress * 100)}%</span>
+        <span class="progress-label">zum Futter</span>
       </div>
 
       <div class="time-flash ${state.showTimeFlash ? 'show' : ''}" id="time-flash" aria-live="polite">
@@ -343,11 +393,12 @@ function renderEnd(root) {
           <span class="confetti">🎉</span>
           <span class="confetti">✨</span>
           <span class="confetti">🎊</span>
+          <span class="confetti">⭐</span>
         </div>
         <h1 class="end-title">Fertig!</h1>
         <p class="end-sub">${animal.name} hat das Futter erreicht!</p>
         <div class="eat-scene">
-          <span class="animal-big eating">${animal.emoji}</span>
+          ${animalBadgeHTML(animal.emoji, animal.color, 'eating big')}
           <span class="food-big">${animal.foodEmoji}</span>
         </div>
         <p class="yum">Mjam mjam! 😋</p>
@@ -370,7 +421,7 @@ function renderEnd(root) {
   root.querySelector('#btn-restart').addEventListener('click', async () => {
     await unlockAudio()
     stopSpeech()
-    const sec = clampDuration()
+    const sec = Math.min(MAX_DURATION_SEC, Math.max(MIN_DURATION_SEC, durationSec()))
     state.totalMs = sec * 1000
     state.remainingMs = state.totalMs
     state.startedAt = performance.now()
@@ -396,7 +447,6 @@ function onAnimalTap(root) {
   state.timeFlashText = formatTime(state.remainingMs / 1000)
   state.showTimeFlash = true
   speakGerman(spoken)
-  // Only update flash overlay without full re-render if possible
   const flash = root.querySelector('#time-flash')
   if (flash) {
     flash.textContent = state.timeFlashText
@@ -467,6 +517,10 @@ function updateRunningDOM(root) {
   if (animalBtn) animalBtn.style.left = `${leftPct}%`
   const fill = root.querySelector('.path-fill')
   if (fill) fill.style.width = `${progress * 100}%`
+  const pct = root.querySelector('#progress-pct')
+  if (pct) pct.textContent = `${Math.round(progress * 100)}%`
+  const markers = root.querySelector('.path-markers')
+  if (markers) markers.innerHTML = pathMarkersHTML(progress)
 }
 
 export function render(root) {

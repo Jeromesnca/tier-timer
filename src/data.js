@@ -10,7 +10,7 @@ export const ANIMALS = [
     food: 'Gras & Heu',
     foodEmoji: '🌾',
     sound: 'cow',
-    color: '#FFFFFF',
+    color: '#ECEFF1',
   },
   {
     id: 'pferd',
@@ -19,7 +19,7 @@ export const ANIMALS = [
     food: 'Apfel & Heu',
     foodEmoji: '🍎',
     sound: 'horse',
-    color: '#8B4513',
+    color: '#D7CCC8',
   },
   {
     id: 'huhn',
@@ -28,7 +28,7 @@ export const ANIMALS = [
     food: 'Körner',
     foodEmoji: '🌽',
     sound: 'chicken',
-    color: '#FFD700',
+    color: '#FFF9C4',
   },
   {
     id: 'schwein',
@@ -37,7 +37,7 @@ export const ANIMALS = [
     food: 'Äpfel & Rüben',
     foodEmoji: '🥕',
     sound: 'pig',
-    color: '#FFB6C1',
+    color: '#F8BBD0',
   },
   {
     id: 'hund',
@@ -46,7 +46,7 @@ export const ANIMALS = [
     food: 'Knochen & Napf',
     foodEmoji: '🦴',
     sound: 'dog',
-    color: '#D2691E',
+    color: '#FFE0B2',
   },
   {
     id: 'katze',
@@ -55,7 +55,7 @@ export const ANIMALS = [
     food: 'Fisch & Milch',
     foodEmoji: '🐟',
     sound: 'cat',
-    color: '#FFA500',
+    color: '#FFE0B2',
   },
   {
     id: 'goldfisch',
@@ -64,7 +64,7 @@ export const ANIMALS = [
     food: 'Flocken',
     foodEmoji: '🫧',
     sound: 'fish',
-    color: '#FF8C00',
+    color: '#FFCC80',
   },
 ]
 
@@ -73,43 +73,47 @@ export const BACKGROUNDS = [
   {
     id: 'wald',
     name: 'Wald',
-    gradient: 'linear-gradient(180deg, #87CEEB 0%, #87CEEB 45%, #2E7D32 45%, #1B5E20 100%)',
+    gradient: 'linear-gradient(180deg, #81D4FA 0%, #81D4FA 42%, #43A047 42%, #1B5E20 100%)',
     decor: 'trees',
   },
   {
     id: 'wiese',
     name: 'Wiese',
-    gradient: 'linear-gradient(180deg, #81D4FA 0%, #81D4FA 50%, #8BC34A 50%, #689F38 100%)',
+    gradient: 'linear-gradient(180deg, #81D4FA 0%, #B3E5FC 48%, #9CCC65 48%, #558B2F 100%)',
     decor: 'flowers',
   },
   {
     id: 'stall',
-    name: 'Bauernhof',
-    gradient: 'linear-gradient(180deg, #FFE082 0%, #FFE082 40%, #A1887F 40%, #8D6E63 100%)',
+    name: 'Stall',
+    gradient: 'linear-gradient(180deg, #FFE082 0%, #FFECB3 38%, #BCAAA4 38%, #8D6E63 100%)',
     decor: 'barn',
   },
   {
     id: 'garten',
     name: 'Garten',
-    gradient: 'linear-gradient(180deg, #80DEEA 0%, #80DEEA 48%, #AED581 48%, #7CB342 100%)',
+    gradient: 'linear-gradient(180deg, #80DEEA 0%, #B2EBF2 46%, #AED581 46%, #7CB342 100%)',
     decor: 'garden',
   },
   {
     id: 'aquarium',
     name: 'Aquarium',
-    gradient: 'linear-gradient(180deg, #0288D1 0%, #4FC3F7 40%, #0277BD 70%, #01579B 100%)',
+    gradient: 'linear-gradient(180deg, #0299C7 0%, #4FC3F7 35%, #0288D1 65%, #01579B 100%)',
     decor: 'water',
   },
   {
     id: 'wohnzimmer',
     name: 'Wohnzimmer',
-    gradient: 'linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 35%, #D7CCC8 35%, #BCAAA4 100%)',
+    gradient: 'linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 32%, #D7CCC8 32%, #A1887F 100%)',
     decor: 'home',
   },
 ]
 
 export const MIN_DURATION_SEC = 60
 export const MAX_DURATION_SEC = 4 * 60 * 60
+
+/** Continuous control range in whole minutes */
+export const MIN_DURATION_MIN = 1
+export const MAX_DURATION_MIN = 4 * 60
 
 export function formatTime(totalSeconds) {
   const s = Math.max(0, Math.ceil(totalSeconds))
@@ -120,6 +124,18 @@ export function formatTime(totalSeconds) {
     return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
   }
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+}
+
+/** Human-readable duration for setup hint (no "Noch") */
+export function formatDurationLabel(totalSeconds) {
+  const s = Math.max(0, Math.round(totalSeconds))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  if (h === 0) return m === 1 ? '1 Minute' : `${m} Minuten`
+  if (m === 0) return h === 1 ? '1 Stunde' : `${h} Stunden`
+  const hPart = h === 1 ? '1 Stunde' : `${h} Stunden`
+  const mPart = m === 1 ? '1 Minute' : `${m} Minuten`
+  return `${hPart} ${mPart}`
 }
 
 export function formatSpokenTime(totalSeconds) {
