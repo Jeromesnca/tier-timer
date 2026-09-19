@@ -73,37 +73,37 @@ export const BACKGROUNDS = [
   {
     id: 'wald',
     name: 'Wald',
-    gradient: 'linear-gradient(180deg, #81D4FA 0%, #81D4FA 42%, #43A047 42%, #1B5E20 100%)',
+    gradient: 'linear-gradient(180deg, #B3E5FC 0%, #E1F5FE 48%, #66BB6A 48%, #1B5E20 100%)',
     decor: 'trees',
   },
   {
     id: 'wiese',
     name: 'Wiese',
-    gradient: 'linear-gradient(180deg, #81D4FA 0%, #B3E5FC 48%, #9CCC65 48%, #558B2F 100%)',
+    gradient: 'linear-gradient(180deg, #81D4FA 0%, #E1F5FE 48%, #AED581 48%, #558B2F 100%)',
     decor: 'flowers',
   },
   {
     id: 'stall',
     name: 'Stall',
-    gradient: 'linear-gradient(180deg, #FFE082 0%, #FFECB3 38%, #BCAAA4 38%, #8D6E63 100%)',
+    gradient: 'linear-gradient(180deg, #FFE082 0%, #FFF8E1 40%, #D7CCC8 40%, #8D6E63 100%)',
     decor: 'barn',
   },
   {
     id: 'garten',
     name: 'Garten',
-    gradient: 'linear-gradient(180deg, #80DEEA 0%, #B2EBF2 46%, #AED581 46%, #7CB342 100%)',
+    gradient: 'linear-gradient(180deg, #80DEEA 0%, #E0F7FA 46%, #AED581 46%, #7CB342 100%)',
     decor: 'garden',
   },
   {
     id: 'aquarium',
     name: 'Aquarium',
-    gradient: 'linear-gradient(180deg, #0299C7 0%, #4FC3F7 35%, #0288D1 65%, #01579B 100%)',
+    gradient: 'linear-gradient(180deg, #4FC3F7 0%, #0299C7 40%, #0288D1 70%, #01579B 100%)',
     decor: 'water',
   },
   {
     id: 'wohnzimmer',
     name: 'Wohnzimmer',
-    gradient: 'linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 32%, #D7CCC8 32%, #A1887F 100%)',
+    gradient: 'linear-gradient(180deg, #FFF8E1 0%, #FFE0B2 50%, #D7CCC8 50%, #A1887F 100%)',
     decor: 'home',
   },
 ]

@@ -345,7 +345,12 @@ function renderRunning(root) {
         <button type="button" class="animal-btn" id="animal-btn"
           style="left:${leftPct}%"
           aria-label="${animal.name} antippen für Geräusch und Restzeit">
-          ${animalBadgeHTML(animal.emoji, animal.color, state.paused ? '' : 'walking')}
+          ${animalBadgeHTML(
+            animal.emoji,
+            animal.color,
+            `hero ${state.paused ? '' : 'walking'}`.trim(),
+            true
+          )}
         </button>
         <div class="food-spot" aria-hidden="true">
           <span class="food-pulse"></span>
@@ -355,8 +360,7 @@ function renderRunning(root) {
       </div>
 
       <div class="progress-caption" aria-hidden="true">
-        <span class="progress-pct" id="progress-pct">${Math.round(progress * 100)}%</span>
-        <span class="progress-label">zum Futter</span>
+        <span class="progress-pct" id="progress-pct">${Math.round(progress * 100)}%</span><span class="progress-label">zum Futter</span>
       </div>
 
       <div class="time-flash ${state.showTimeFlash ? 'show' : ''}" id="time-flash" aria-live="polite">
@@ -398,7 +402,7 @@ function renderEnd(root) {
         <h1 class="end-title">Fertig!</h1>
         <p class="end-sub">${animal.name} hat das Futter erreicht!</p>
         <div class="eat-scene">
-          ${animalBadgeHTML(animal.emoji, animal.color, 'eating big')}
+          ${animalBadgeHTML(animal.emoji, animal.color, 'eating big', true)}
           <span class="food-big">${animal.foodEmoji}</span>
         </div>
         <p class="yum">Mjam mjam! 😋</p>
